@@ -216,3 +216,28 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Audios files
+*/audios
+*/wavs
+
+# Ignore this folder for github
+training/
+
+# Generated audio previews
+/assets/generated/
+
+# Training checkpoints
+*.ckpt
+
+# Incomplete downloads
+*.part
+
+# Temporary dataset archives
+*.zip
+
+# Large trained models
+*.onnx
+
+# Keep model configuration files
+!*.onnx.json
