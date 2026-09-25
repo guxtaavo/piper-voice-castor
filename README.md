@@ -1,6 +1,6 @@
 # Piper Voice Castor
 
-Projeto para criar uma voz personalizada em português brasileiro com o
+Projeto para criar uma voz personalizada em pt-BR com o
 [Piper TTS](https://github.com/OHF-Voice/piper1-gpl).
 
 O repositório reúne o fluxo utilizado para:
@@ -21,7 +21,8 @@ piper-voice-castor/
 │   ├── audios/                  # MP3s gerados (ignorado pelo Git)
 │   ├── generated/               # WAVs gerados pelo modelo
 │   ├── wavs/                    # Dataset convertido (ignorado pelo Git)
-│   └── frases.txt               # Uma frase por linha
+│   ├── frases.txt               # Frases originais, uma por linha
+│   └── frases_longas_500.txt    # 500 frases longas para treinamento
 ├── models/
 │   ├── pt_BR-castor-medium/     # Modelo Castor treinado
 │   └── pt_BR-faber-medium/      # Modelo brasileiro usado como referência
@@ -35,9 +36,9 @@ piper-voice-castor/
 │   ├── train_castor_cli.py
 │   └── train_castor_wsl.sh
 ├── src/
-│   ├── app.py                   # Experimento inicial com Selenium
 │   ├── audio_converter.py       # Conversão MP3 para WAV
-│   ├── phrase_generator.py      # Geração e download dos MP3s
+│   ├── phrase_generator_google_chrome.py # Geração e download dos MP3s
+│   ├── phrase_generator_firefox.py # Mesma geração usando Firefox
 │   └── piper_demo.py            # Demonstração local da voz Castor
 ├── training/                    # Dataset/checkpoints locais (ignorado pelo Git)
 ├── requirements.txt
@@ -48,7 +49,7 @@ piper-voice-castor/
 
 - Windows 10 ou 11;
 - Python 3.12;
-- Google Chrome, utilizado pelo Selenium;
+- Google Chrome ou Firefox, utilizado pelo Selenium;
 - acesso à internet para gerar os MP3s;
 - arquivos `.onnx` e `.onnx.json` para testar a voz localmente.
 
@@ -66,7 +67,7 @@ py -3.12 -m venv .venv
 Ative o ambiente:
 
 ```powershell
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 Instale as dependências congeladas do ambiente local:
@@ -81,8 +82,10 @@ usado no projeto.
 
 ## 1. Preparar as frases
 
-Edite [assets/frases.txt](assets/frases.txt) e coloque uma frase por linha. A
-ordem das linhas define a numeração dos áudios:
+O gerador usa por padrão [assets/frases_longas_500.txt](assets/frases_longas_500.txt),
+com uma frase por linha. Você também pode usar [assets/frases.txt](assets/frases.txt)
+ou outro arquivo TXT com o parâmetro `--phrases-file`. A ordem das linhas define
+a numeração dos áudios:
 
 ```text
 Olá, seja bem-vindo!
@@ -98,12 +101,12 @@ diante. Não altere a ordem depois que os áudios forem gerados.
 Execute:
 
 ```powershell
-python src\phrase_generator.py
+python src\phrase_generator_google_chrome.py
 ```
 
 Por padrão, o script:
 
-- lê `assets/frases.txt`;
+- lê `assets/frases_longas_500.txt`;
 - abre o Chrome com Selenium;
 - fecha abas inesperadas abertas por anúncios;
 - aguarda cada download terminar antes de avançar;
@@ -111,16 +114,29 @@ Por padrão, o script:
 - mantém um intervalo de 2 segundos entre as gerações;
 - ignora arquivos que já existem.
 
+Ao trocar o arquivo de frases, use também outra pasta com `--output-dir` para
+não reutilizar áudios numerados de um conjunto diferente.
+
+Para usar o Firefox, instale o navegador e execute:
+
+```powershell
+python src\phrase_generator_firefox.py
+```
+
+Essa versão aceita os mesmos parâmetros (`--overwrite`, `--delay`,
+`--phrases-file`, `--output-dir`, `--timeout` e `--retries`) e usa a mesma pasta
+de saída. O Selenium inicia o Firefox e gerencia o GeckoDriver automaticamente.
+
 Para gerar novamente arquivos existentes:
 
 ```powershell
-python src\phrase_generator.py --overwrite
+python src\phrase_generator_google_chrome.py --overwrite
 ```
 
 Para usar outro intervalo entre as frases:
 
 ```powershell
-python src\phrase_generator.py --delay 5
+python src\phrase_generator_google_chrome.py --delay 5
 ```
 
 ## 3. Converter MP3 para WAV

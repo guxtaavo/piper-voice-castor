@@ -18,13 +18,28 @@ READLOUD_URL = (
     "46-voz-masculina-ricardo.html"
 )
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PHRASES_FILE = PROJECT_ROOT / "assets" / "frases.txt"
+DEFAULT_PHRASES_FILE = PROJECT_ROOT / "assets" / "frases_longas_500.txt"
 DEFAULT_AUDIO_DIR = PROJECT_ROOT / "assets" / "audios"
 DOWNLOAD_LINK_SELECTOR = 'a[href^="/tmp/"][href$=".mp3"]'
 
 
-def create_driver(download_dir: Path) -> webdriver.Chrome:
+def create_driver(
+    download_dir: Path,
+    browser: str = "chrome",
+) -> webdriver.Remote:
     download_dir.mkdir(parents=True, exist_ok=True)
+
+    if browser == "firefox":
+        options = webdriver.FirefoxOptions()
+        options.set_preference("browser.download.folderList", 2)
+        options.set_preference("browser.download.dir", str(download_dir.resolve()))
+        options.set_preference("browser.download.useDownloadDir", True)
+        options.set_preference("dom.disable_open_during_load", True)
+        options.set_preference("permissions.default.desktop-notification", 2)
+        return webdriver.Firefox(options=options)
+
+    if browser != "chrome":
+        raise ValueError(f"Navegador não suportado: {browser}")
 
     options = webdriver.ChromeOptions()
 
@@ -69,7 +84,7 @@ def read_phrases(phrases_file: Path) -> list[str]:
 
 
 def close_unexpected_tabs(
-    driver: webdriver.Chrome,
+    driver: webdriver.Remote,
     main_window: str,
 ) -> None:
     """Fecha abas abertas por anúncios e retorna à aba principal."""
@@ -98,13 +113,13 @@ def is_mp3_file(file_path: Path) -> bool:
 
 
 def download_mp3(
-    driver: webdriver.Chrome,
+    driver: webdriver.Remote,
     download_url: str,
     output_file: Path,
     timeout: float,
     retries: int,
 ) -> None:
-    """Baixa o MP3 diretamente, sem depender do gerenciador do Chrome."""
+    """Baixa o MP3 diretamente, sem depender do gerenciador do navegador."""
     temporary_file = output_file.with_suffix(".mp3.part")
     cookies = "; ".join(
         f"{cookie['name']}={cookie['value']}"
@@ -166,7 +181,7 @@ def download_mp3(
 
 
 def generate_and_download(
-    driver: webdriver.Chrome,
+    driver: webdriver.Remote,
     phrase: str,
     output_file: Path,
     timeout: float,
@@ -207,7 +222,7 @@ def generate_and_download(
     if not download_url:
         raise OSError("O link gerado não possui uma URL de download.")
 
-    # Baixar diretamente evita o bloqueio do Chrome após vários downloads
+    # Baixar diretamente evita o bloqueio do navegador após vários downloads
     # automáticos consecutivos.
     download_mp3(
         driver=driver,
@@ -230,10 +245,11 @@ def process_phrases(
     timeout: float,
     retries: int,
     overwrite: bool,
+    browser: str = "chrome",
 ) -> None:
     phrases = read_phrases(phrases_file)
     audio_dir.mkdir(parents=True, exist_ok=True)
-    driver = create_driver(audio_dir)
+    driver = create_driver(audio_dir, browser=browser)
 
     try:
         driver.get(READLOUD_URL)
@@ -271,7 +287,7 @@ def process_phrases(
         try:
             driver.quit()
         except WebDriverException:
-            # O ChromeDriver pode já ter encerrado após Ctrl+C ou falha externa.
+            # O driver pode já ter encerrado após Ctrl+C ou falha externa.
             pass
 
 
@@ -317,7 +333,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def main(browser: str = "chrome") -> None:
     args = parse_args()
 
     if args.delay < 0:
@@ -334,6 +350,7 @@ def main() -> None:
         timeout=args.timeout,
         retries=args.retries,
         overwrite=args.overwrite,
+        browser=browser,
     )
 
 
