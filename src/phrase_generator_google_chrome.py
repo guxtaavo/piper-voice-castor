@@ -18,7 +18,7 @@ READLOUD_URL = (
     "46-voz-masculina-ricardo.html"
 )
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PHRASES_FILE = PROJECT_ROOT / "assets" / "frases_longas_500.txt"
+DEFAULT_PHRASES_FILE = PROJECT_ROOT / "assets" / "frases.txt"
 DEFAULT_AUDIO_DIR = PROJECT_ROOT / "assets" / "audios"
 DOWNLOAD_LINK_SELECTOR = 'a[href^="/tmp/"][href$=".mp3"]'
 
